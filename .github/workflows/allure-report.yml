@@ -8,6 +8,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      WOMPI_SANBOX_URL: ${{ secrets.WOMPI_SANBOX_URL }}
+      WOMPI_PROD_URL: ${{ secrets.WOMPI_PROD_URL }}
+      WOMPI_PUBLIC_KEY: ${{ secrets.WOMPI_PUBLIC_KEY }}
+      WOMPI_PRIVATE_KEY: ${{ secrets.WOMPI_PRIVATE_KEY }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
