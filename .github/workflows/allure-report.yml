@@ -1,4 +1,4 @@
-name: Publish Allure Report
+name: Allure Report CI
 
 on:
   push:
@@ -6,11 +6,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write    # 👈 necesario para publicar en gh-pages
+  pages: write
 
 jobs:
   test:
+    name: Run Tests and Publish Allure Report
     runs-on: ubuntu-latest
+
     env:
       WOMPI_SANBOX_URL: "https://api-sandbox.co.uat.wompi.dev/v1"
       WOMPI_PROD_URL: "https://api.co.uat.wompi.dev/v1"
@@ -18,28 +21,51 @@ jobs:
       WOMPI_PRIVATE_KEY: "prv_stagtest_5i0ZGIGiFcDQifYsXxvsny7Y37tKqFWg"
 
     steps:
-      - name: Checkout repository
+      - name: 🧱 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 21
+      - name: ⚙️ Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Debug environment variables
+      # ✅ Verificar que las variables de entorno existen
+      - name: 🔍 Validate environment variables
         run: |
-          echo "Sandbox URL: $WOMPI_SANBOX_URL"
+          echo "Verificando variables de entorno..."
+          REQUIRED_VARS=("WOMPI_SANBOX_URL" "WOMPI_PROD_URL" "WOMPI_PUBLIC_KEY" "WOMPI_PRIVATE_KEY")
+          for var in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!var}" ]; then
+              echo "❌ ERROR: $var no está definida o está vacía."
+              exit 1
+            else
+              echo "✅ $var detectada (${#var} chars)"
+            fi
+          done
 
-      - name: Run Maven tests
+      - name: 🧪 Run tests
         run: mvn clean test
 
-      - name: Generate Allure report
+      # 📊 Generar reporte Allure
+      - name: 📊 Generate Allure report
         run: |
-          npx allure-commandline generate target/allure-results --clean -o target/allure-report
+          npm install -g allure-commandline
+          allure generate target/allure-results --clean -o target/allure-report
+          echo "✅ Reporte Allure generado en target/allure-report"
 
-      - name: Deploy Allure report to GitHub Pages
+      # 📦 Subir reporte como artefacto descargable
+      - name: 📦 Upload Allure report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: target/allure-report
+
+      # 🌍 Publicar reporte en GitHub Pages
+      - name: 🚀 Deploy Allure report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
           publish_dir: ./target/allure-report
+          force_orphan: true
