@@ -24,6 +24,10 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Debug environment variables
+        run: |
+          echo "Sandbox URL: $WOMPI_SANBOX_URL"
+
       - name: Run Maven tests
         run: mvn clean test
 
